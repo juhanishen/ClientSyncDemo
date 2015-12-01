@@ -79,6 +79,7 @@ public class DemoClient extends Application {
     root.getChildren().add(hb);
     primaryStage.setScene(new Scene(root, 300, 250));
     primaryStage.show();
+    syncNameLabel.requestFocus();
   }
 
   public void updateSyncField(final String newValue) {

@@ -3,6 +3,7 @@ package com.juhani.client.sync.demo.mongo;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
@@ -60,9 +61,8 @@ public class MongoUtil {
 
     DBObject query = new BasicDBObject(MongoConstants.SyncId, id);
 
-    DBObject update =
-        new BasicDBObject(MongoConstants.SyncId, id).append(MongoConstants.SyncToken, tokenNo)
-            .append(MongoConstants.SyncValue, value);
+    DBObject update = new BasicDBObject(MongoConstants.SyncId, id)
+        .append(MongoConstants.SyncToken, tokenNo).append(MongoConstants.SyncValue, value);
 
     DBObject upsertStatement = new BasicDBObject("$set", update);
 
@@ -71,6 +71,27 @@ public class MongoUtil {
     } catch (MongoException e) {
       System.out.println("mongo throws exception in upsertToken");
     }
+  }
+
+  public boolean getAndSetToken() {
+    return true;
+  }
+
+  public String getSyncFieldValue(int syncFieldId, long syncTokenNo) {
+    DBCollection col = db.getCollection(valueCollectionName);
+
+    DBObject query = new BasicDBObject(MongoConstants.SyncId, syncFieldId)
+        .append(MongoConstants.SyncToken, syncTokenNo);
+    String ret = "";
+    DBCursor cursor = col.find(query);
+    while (cursor.hasNext()) {
+      DBObject obj = cursor.next();
+      if (obj != null && obj.get(MongoConstants.SyncValue) != null) {
+        ret = (String) obj.get(MongoConstants.SyncValue);
+      }
+    }
+
+    return ret;
   }
 
 }

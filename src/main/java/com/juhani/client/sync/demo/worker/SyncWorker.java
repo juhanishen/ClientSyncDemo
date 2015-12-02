@@ -6,7 +6,7 @@ import com.juhani.client.sync.demo.ui.DemoClient;
 
 public class SyncWorker implements Runnable {
   private DemoClient dc = null;
-
+  String oldValue = ""; 
   public SyncWorker(DemoClient client) {
     dc = client;
   }
@@ -26,7 +26,10 @@ public class SyncWorker implements Runnable {
   private void syncFieldsAndNotify() {
     String newValue =
         MongoUtil.getInstance().getSyncFieldValue(Constants.SyncFieldId, Constants.SyncTokenNo);
-    dc.updateSyncField(newValue);
+    if(!newValue.equalsIgnoreCase(oldValue)){
+      dc.updateSyncField(newValue);
+      oldValue = newValue;
+    } 
   }
 
 }

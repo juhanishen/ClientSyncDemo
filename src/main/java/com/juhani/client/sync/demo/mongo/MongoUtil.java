@@ -1,5 +1,6 @@
 package com.juhani.client.sync.demo.mongo;
 
+import com.juhani.client.sync.demo.shared.TokenOperand;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -38,13 +39,13 @@ public class MongoUtil {
     return db;
   }
 
-  public void upsertToken(int id, long tokenNo) {
+  public void upsertToken(int id, String clientName, long token) {
     DBCollection col = db.getCollection(toKenCollectionName);
 
     DBObject query = new BasicDBObject(MongoConstants.SyncId, id);
 
-    DBObject update =
-        new BasicDBObject(MongoConstants.SyncId, id).append(MongoConstants.SyncToken, tokenNo);
+    DBObject update = new BasicDBObject(MongoConstants.SyncId, id)
+        .append(MongoConstants.SyncToken, token).append(MongoConstants.ClientName, clientName);
 
     DBObject upsertStatement = new BasicDBObject("$set", update);
 
@@ -73,9 +74,40 @@ public class MongoUtil {
     }
   }
 
-  public boolean getAndSetToken() {
-    return true;
+  public TokenOperand queryToken(int id) {
+    DBCollection col = db.getCollection(toKenCollectionName);
+
+    DBObject query = new BasicDBObject(MongoConstants.SyncId, id);
+
+    long tokenStatus = -1L;
+    String clientName = "";
+    DBCursor cursor = col.find(query);
+    if (cursor.size() > 1) {
+      // log error
+      System.out.println("error find multiple token for syncId:" + id);
+    }
+    
+    TokenOperand operand = new TokenOperand();
+    while (cursor.hasNext()) {
+      DBObject obj = cursor.next();
+      if (obj != null && 
+          obj.get(MongoConstants.SyncToken) != null &&
+          obj.get(MongoConstants.ClientName)!= null
+          ) {
+        tokenStatus = ((Long) obj.get(MongoConstants.SyncToken)).longValue();
+        clientName = (String) obj.get(MongoConstants.ClientName);     
+        operand.setClientName(clientName);
+        if(tokenStatus > 0){
+          operand.setTokenTaken(true);
+        }else{
+          operand.setTokenTaken(false);
+        }   
+      }
+    }   
+    return operand;
   }
+
+
 
   public String getSyncFieldValue(int syncFieldId, long syncTokenNo) {
     DBCollection col = db.getCollection(valueCollectionName);

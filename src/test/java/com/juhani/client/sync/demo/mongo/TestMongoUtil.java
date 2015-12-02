@@ -8,7 +8,7 @@ public class TestMongoUtil {
 
   @Test
   public void testUpsertToken() {
-    MongoUtil.getInstance().upsertToken(2, 4);
+    MongoUtil.getInstance().upsertToken(2,"dummy",4);
     // Todo fetch from mongo to see the change
     // now just check db manually
   }

@@ -1,6 +1,7 @@
 package com.juhani.client.sync.demo.ui;
 
 import com.juhani.client.sync.demo.mongo.MongoUtil;
+import com.juhani.client.sync.demo.shared.TokenOperand;
 import com.juhani.client.sync.demo.worker.SyncWorker;
 
 import javafx.application.Application;
@@ -15,28 +16,38 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class DemoClient extends Application {
-  final TextField syncValueTextField = new TextField();
+  TextField syncValueTextField = new TextField();
+  Label syncNameHintLabel = new Label("hintLabel:");
+
   boolean editMode = false;
-  SyncTextFieldChangeListener syncTextValueListener = new SyncTextFieldChangeListener(this);
+  SyncTextFieldChangeListener syncTextValueListener = null;
+
 
   final int j = 0;
   SyncWorker syncWorker = null;
 
+  public static String clientName = "";
+
   public static void main(String[] args) {
+    if (args.length != 1) {
+      System.out.println("please give clientName");
+      System.exit(-1);
+    }
+    clientName = args[0];
+
     launch(args);
   }
 
   @Override
   public void start(Stage primaryStage) {
+    SyncTextFieldChangeListener syncTextValueListener =
+        new SyncTextFieldChangeListener(this, clientName);
 
-    syncWorker = new SyncWorker(this);
-    Thread sync = new Thread(syncWorker);
-    sync.start();
-
-    primaryStage.setTitle("Hello World!");
+    primaryStage.setTitle("I am:" + clientName);
 
 
     Label syncNameLabel = new Label("SyncField:");
@@ -46,19 +57,25 @@ public class DemoClient extends Application {
     btn.setText("submit change");
     hb.getChildren().addAll(syncNameLabel, syncValueTextField, btn);
     hb.setSpacing(10);
+    VBox vb = new VBox();
+    vb.setSpacing(5);
+    syncNameHintLabel.setMaxWidth(450);
+    vb.getChildren().addAll(hb,syncNameHintLabel);
+
+
     btn.setOnAction(new EventHandler<ActionEvent>() {
       public void handle(ActionEvent event) {
         System.out.println("Update value to db");
         MongoUtil.getInstance().upsertSyncContent(Constants.SyncFieldId, Constants.SyncTokenNo,
             syncValueTextField.getText());
-        //edit mode finished
+        MongoUtil.getInstance().upsertToken(Constants.SyncFieldId, clientName, Constants.TokenFree);
+        // edit mode finished
         setEditMode(false);
-      }  
+      }
     });
 
-    
-    
-    
+
+
     if (!editMode) {
       syncValueTextField.textProperty().addListener(syncTextValueListener);
     } else {
@@ -66,30 +83,52 @@ public class DemoClient extends Application {
       syncValueTextField.textProperty().removeListener(syncTextValueListener);
     }
 
-    syncValueTextField.focusedProperty().addListener(new ChangeListener<Boolean>()
-    {
-        public void changed(ObservableValue<? extends Boolean> arg0, Boolean oldPropertyValue, Boolean newPropertyValue)
-        {
+    syncValueTextField.focusedProperty().addListener(new ChangeListener<Boolean>() {
+      public void changed(ObservableValue<? extends Boolean> arg0, Boolean oldPropertyValue,
+          Boolean newPropertyValue) {
+        TokenOperand tokenOperand = MongoUtil.getInstance().queryToken(Constants.SyncFieldId);
+        if (tokenOperand.isTokenTaken()
+            && (!tokenOperand.getClientName().equalsIgnoreCase(clientName))) {
+          // token taken, but not hold by client himself/herself
+          handleEditingConflict(tokenOperand.getClientName());
+        } else if (!tokenOperand.isTokenTaken()) {
+          // token not taken
+          MongoUtil.getInstance().upsertToken(Constants.SyncFieldId, clientName,
+              Constants.TokenTaken);
           setEditMode(true);
+        } else {
+          // token taken by client himself/herself
+          // do nothing
         }
+
+      }
     });
-    
-    
+
+
     StackPane root = new StackPane();
-    root.getChildren().add(hb);
-    primaryStage.setScene(new Scene(root, 300, 250));
+    root.getChildren().add(vb);
+    primaryStage.setScene(new Scene(root, 500, 450));
     primaryStage.show();
+
+    syncWorker = new SyncWorker(this);
+    Thread sync = new Thread(syncWorker);
+    sync.start();
     syncNameLabel.requestFocus();
   }
 
   public void updateSyncField(final String newValue) {
     if (!editMode) {
-      //editmode false, client shall aware of change, disable listener first, prevent recursive call
-      syncValueTextField.textProperty().removeListener(syncTextValueListener);
+      // editmode false, client shall aware of change, disable listener first, prevent recursive
+      // call
+      if (syncTextValueListener != null) {
+        syncValueTextField.textProperty().removeListener(syncTextValueListener);
+      }
       Platform.runLater(new Runnable() {
         public void run() {
           syncValueTextField.setText(newValue);
-          syncValueTextField.textProperty().addListener(syncTextValueListener);
+          if (syncTextValueListener != null) {
+            syncValueTextField.textProperty().addListener(syncTextValueListener);
+          }
         }
       });
     }
@@ -97,11 +136,31 @@ public class DemoClient extends Application {
 
   public void setEditMode(boolean b) {
     editMode = b;
-    if(editMode){
-      //if editmode is true, there is no need to invoke tf property change listener
-      syncValueTextField.textProperty().removeListener(syncTextValueListener);
-    }else{
-      syncValueTextField.textProperty().addListener(syncTextValueListener);
+    if (editMode) {
+      // if editmode is true, there is no need to invoke tf property change listener
+      if (syncTextValueListener != null) {
+        syncValueTextField.textProperty().removeListener(syncTextValueListener);
+      }
+      Platform.runLater(new Runnable() {
+        public void run() {
+          syncNameHintLabel.setText(Constants.HoldingToken);
+        }
+      });
+    } else {
+      if (syncTextValueListener != null) {
+        syncValueTextField.textProperty().addListener(syncTextValueListener);
+      }
     }
+  }
+
+  public void handleEditingConflict(final String editedClientName) {
+    Platform.runLater(new Runnable() {
+      public void run() {
+        editMode = false;
+        syncNameHintLabel.setText(Constants.EditTokenRejected+","+editedClientName+" is Editing");
+        syncNameHintLabel.requestFocus();
+      }
+    });
+
   }
 }

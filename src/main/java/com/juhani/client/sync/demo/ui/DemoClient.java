@@ -62,7 +62,7 @@ public class DemoClient extends Application {
     VBox vb = new VBox();
     vb.setSpacing(5);
     syncNameHintLabel.setMaxWidth(450);
-    vb.getChildren().addAll(hb,syncNameHintLabel);
+    vb.getChildren().addAll(hb, syncNameHintLabel);
 
 
     btn.setOnAction(new EventHandler<ActionEvent>() {
@@ -71,7 +71,7 @@ public class DemoClient extends Application {
         MongoUtil.getInstance().upsertSyncContent(Constants.SyncFieldId,
             syncValueTextField.getText());
         MongoUtil.getInstance().upsertToken(Constants.SyncFieldId, clientName, Constants.TokenFree);
-       // edit mode finished
+        // edit mode finished
         setEditMode(false);
       }
     });
@@ -99,7 +99,7 @@ public class DemoClient extends Application {
               Constants.TokenTaken);
           setEditMode(true);
         } else {
-          //token hold by this client him/herself
+          // token hold by this client him/herself
         }
 
       }
@@ -158,7 +158,8 @@ public class DemoClient extends Application {
     Platform.runLater(new Runnable() {
       public void run() {
         editMode = false;
-        syncNameHintLabel.setText(Constants.EditTokenRejected+","+editedClientName+" is Editing");
+        syncNameHintLabel
+            .setText(Constants.EditTokenRejected + "," + editedClientName + " is Editing");
         syncNameHintLabel.requestFocus();
       }
     });
@@ -168,48 +169,48 @@ public class DemoClient extends Application {
   public void disableFieldsEditingMode(final List<TokenOperand> fieldsNotificationList) {
     Platform.runLater(new Runnable() {
       public void run() {
-        for(TokenOperand op: fieldsNotificationList){
-          if(!op.getClientName().equalsIgnoreCase(clientName)){
-            if(op.getSyncId() == Constants.SyncFieldId){
+        for (TokenOperand op : fieldsNotificationList) {
+          if (!op.getClientName().equalsIgnoreCase(clientName)) {
+            if (op.getSyncId() == Constants.SyncFieldId) {
               syncValueTextField.setDisable(true);
               syncValueTextField.setEditable(false);
-              btn.setDisable(true);             
+              btn.setDisable(true);
             }
           }
         }
       }
     });
-    
+
   }
-  
+
   public void enableFieldsEditingMode(final List<TokenOperand> fieldsNotificationList) {
     Platform.runLater(new Runnable() {
       public void run() {
-        for(TokenOperand op: fieldsNotificationList){
+        for (TokenOperand op : fieldsNotificationList) {
           debugDump(fieldsNotificationList);
-          if(!op.getClientName().equalsIgnoreCase(clientName)){
-            if(op.getSyncId() == Constants.SyncFieldId){
+          if (!op.getClientName().equalsIgnoreCase(clientName)) {
+            if (op.getSyncId() == Constants.SyncFieldId) {
               System.out.println("===============");
               System.out.println("syncValueTextField is enabled");
               syncValueTextField.setEditable(true);
               syncValueTextField.setDisable(false);
-              btn.setDisable(false);             
+              btn.setDisable(false);
             }
           }
         }
       }
     });
-    
+
   }
-  
-  
-  private void debugDump(List<TokenOperand> fieldsNotificationList){
-    System.out.println("client: "+clientName+" enableFields list dump");
-    for(TokenOperand op:fieldsNotificationList){
-      System.out.println("SyncId:"+op.getSyncId());
-      System.out.println("last edited by:"+op.getClientName());
-      System.out.println("TokenStatus:"+op.isTokenTaken());
+
+
+  private void debugDump(List<TokenOperand> fieldsNotificationList) {
+    System.out.println("client: " + clientName + " enableFields list dump");
+    for (TokenOperand op : fieldsNotificationList) {
+      System.out.println("SyncId:" + op.getSyncId());
+      System.out.println("last edited by:" + op.getClientName());
+      System.out.println("TokenStatus:" + op.isTokenTaken());
     }
   }
-  
+
 }

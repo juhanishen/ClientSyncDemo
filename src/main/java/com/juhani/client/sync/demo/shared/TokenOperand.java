@@ -28,6 +28,6 @@ public class TokenOperand {
   public void setSyncId(int syncId) {
     this.syncId = syncId;
   }
-  
-  
+
+
 }

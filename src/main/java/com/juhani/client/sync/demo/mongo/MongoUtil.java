@@ -65,8 +65,8 @@ public class MongoUtil {
 
     DBObject query = new BasicDBObject(MongoConstants.SyncId, id);
 
-    DBObject update = new BasicDBObject(MongoConstants.SyncId, id)
-       .append(MongoConstants.SyncValue, value);
+    DBObject update =
+        new BasicDBObject(MongoConstants.SyncId, id).append(MongoConstants.SyncValue, value);
 
     DBObject upsertStatement = new BasicDBObject("$set", update);
 
@@ -133,7 +133,7 @@ public class MongoUtil {
 
     int syncId = -1;
     String clientName = "";
-    
+
 
     DBCursor cursor = col.find(query);
     List<TokenOperand> tokenModeList = new ArrayList<TokenOperand>();
@@ -146,9 +146,9 @@ public class MongoUtil {
         clientName = (String) obj.get(MongoConstants.ClientName);
         operand.setSyncId(syncId);
         operand.setClientName(clientName);
-        if(tokenEditing > 0){
+        if (tokenEditing > 0) {
           operand.setTokenTaken(true);
-        }else{
+        } else {
           operand.setTokenTaken(false);
         }
       }

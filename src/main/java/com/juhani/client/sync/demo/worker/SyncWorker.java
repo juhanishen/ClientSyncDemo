@@ -28,21 +28,20 @@ public class SyncWorker implements Runnable {
   }
 
   private void syncFieldsAndNotify() {
-    String newValue =
-        MongoUtil.getInstance().getSyncFieldValue(Constants.SyncFieldId);
+    String newValue = MongoUtil.getInstance().getSyncFieldValue(Constants.SyncFieldId);
     if (!newValue.equalsIgnoreCase(oldValue)) {
       dc.updateSyncField(newValue);
       oldValue = newValue;
     }
 
     List<TokenOperand> fieldsDisableList =
-        MongoUtil.getInstance().queryTokenMode(Constants.TokenTaken);  
+        MongoUtil.getInstance().queryTokenMode(Constants.TokenTaken);
     dc.disableFieldsEditingMode(fieldsDisableList);
-    
+
     List<TokenOperand> fieldsEnableList =
-        MongoUtil.getInstance().queryTokenMode(Constants.TokenFree);    
+        MongoUtil.getInstance().queryTokenMode(Constants.TokenFree);
     dc.enableFieldsEditingMode(fieldsEnableList);
-   
+
   }
 
 }

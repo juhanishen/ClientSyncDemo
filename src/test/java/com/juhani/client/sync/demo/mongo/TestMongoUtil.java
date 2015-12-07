@@ -15,7 +15,7 @@ public class TestMongoUtil {
 
   @Test
   public void testUpsertSyncContent() {
-    MongoUtil.getInstance().upsertSyncContent(2, 3, "token 3 change value");
+    MongoUtil.getInstance().upsertSyncContent(2, "token 3 change value");
     // Todo fetch from mongo to see the change
     // now just check db manually
   }

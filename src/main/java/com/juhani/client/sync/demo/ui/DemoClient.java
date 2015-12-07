@@ -1,5 +1,7 @@
 package com.juhani.client.sync.demo.ui;
 
+import java.util.List;
+
 import com.juhani.client.sync.demo.mongo.MongoUtil;
 import com.juhani.client.sync.demo.shared.TokenOperand;
 import com.juhani.client.sync.demo.worker.SyncWorker;
@@ -20,6 +22,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class DemoClient extends Application {
+  Button btn = new Button();
   TextField syncValueTextField = new TextField();
   Label syncNameHintLabel = new Label("hintLabel:");
 
@@ -53,7 +56,6 @@ public class DemoClient extends Application {
     Label syncNameLabel = new Label("SyncField:");
 
     HBox hb = new HBox();
-    Button btn = new Button();
     btn.setText("submit change");
     hb.getChildren().addAll(syncNameLabel, syncValueTextField, btn);
     hb.setSpacing(10);
@@ -66,10 +68,10 @@ public class DemoClient extends Application {
     btn.setOnAction(new EventHandler<ActionEvent>() {
       public void handle(ActionEvent event) {
         System.out.println("Update value to db");
-        MongoUtil.getInstance().upsertSyncContent(Constants.SyncFieldId, Constants.SyncTokenNo,
+        MongoUtil.getInstance().upsertSyncContent(Constants.SyncFieldId,
             syncValueTextField.getText());
         MongoUtil.getInstance().upsertToken(Constants.SyncFieldId, clientName, Constants.TokenFree);
-        // edit mode finished
+       // edit mode finished
         setEditMode(false);
       }
     });
@@ -97,8 +99,7 @@ public class DemoClient extends Application {
               Constants.TokenTaken);
           setEditMode(true);
         } else {
-          // token taken by client himself/herself
-          // do nothing
+          //token hold by this client him/herself
         }
 
       }
@@ -163,4 +164,52 @@ public class DemoClient extends Application {
     });
 
   }
+
+  public void disableFieldsEditingMode(final List<TokenOperand> fieldsNotificationList) {
+    Platform.runLater(new Runnable() {
+      public void run() {
+        for(TokenOperand op: fieldsNotificationList){
+          if(!op.getClientName().equalsIgnoreCase(clientName)){
+            if(op.getSyncId() == Constants.SyncFieldId){
+              syncValueTextField.setDisable(true);
+              syncValueTextField.setEditable(false);
+              btn.setDisable(true);             
+            }
+          }
+        }
+      }
+    });
+    
+  }
+  
+  public void enableFieldsEditingMode(final List<TokenOperand> fieldsNotificationList) {
+    Platform.runLater(new Runnable() {
+      public void run() {
+        for(TokenOperand op: fieldsNotificationList){
+          debugDump(fieldsNotificationList);
+          if(!op.getClientName().equalsIgnoreCase(clientName)){
+            if(op.getSyncId() == Constants.SyncFieldId){
+              System.out.println("===============");
+              System.out.println("syncValueTextField is enabled");
+              syncValueTextField.setEditable(true);
+              syncValueTextField.setDisable(false);
+              btn.setDisable(false);             
+            }
+          }
+        }
+      }
+    });
+    
+  }
+  
+  
+  private void debugDump(List<TokenOperand> fieldsNotificationList){
+    System.out.println("client: "+clientName+" enableFields list dump");
+    for(TokenOperand op:fieldsNotificationList){
+      System.out.println("SyncId:"+op.getSyncId());
+      System.out.println("last edited by:"+op.getClientName());
+      System.out.println("TokenStatus:"+op.isTokenTaken());
+    }
+  }
+  
 }

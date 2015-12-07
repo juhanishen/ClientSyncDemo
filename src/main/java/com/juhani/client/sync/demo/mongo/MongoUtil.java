@@ -1,5 +1,8 @@
 package com.juhani.client.sync.demo.mongo;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.juhani.client.sync.demo.shared.TokenOperand;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -39,7 +42,7 @@ public class MongoUtil {
     return db;
   }
 
-  public void upsertToken(int id, String clientName, long token) {
+  public void upsertToken(int id, String clientName, int token) {
     DBCollection col = db.getCollection(toKenCollectionName);
 
     DBObject query = new BasicDBObject(MongoConstants.SyncId, id);
@@ -57,13 +60,13 @@ public class MongoUtil {
 
   }
 
-  public void upsertSyncContent(int id, long tokenNo, String value) {
+  public void upsertSyncContent(int id, String value) {
     DBCollection col = db.getCollection(valueCollectionName);
 
     DBObject query = new BasicDBObject(MongoConstants.SyncId, id);
 
     DBObject update = new BasicDBObject(MongoConstants.SyncId, id)
-        .append(MongoConstants.SyncToken, tokenNo).append(MongoConstants.SyncValue, value);
+       .append(MongoConstants.SyncValue, value);
 
     DBObject upsertStatement = new BasicDBObject("$set", update);
 
@@ -79,41 +82,38 @@ public class MongoUtil {
 
     DBObject query = new BasicDBObject(MongoConstants.SyncId, id);
 
-    long tokenStatus = -1L;
+    int tokenStatus = -1;
     String clientName = "";
     DBCursor cursor = col.find(query);
     if (cursor.size() > 1) {
       // log error
       System.out.println("error find multiple token for syncId:" + id);
     }
-    
+
     TokenOperand operand = new TokenOperand();
     while (cursor.hasNext()) {
       DBObject obj = cursor.next();
-      if (obj != null && 
-          obj.get(MongoConstants.SyncToken) != null &&
-          obj.get(MongoConstants.ClientName)!= null
-          ) {
-        tokenStatus = ((Long) obj.get(MongoConstants.SyncToken)).longValue();
-        clientName = (String) obj.get(MongoConstants.ClientName);     
+      if (obj != null && obj.get(MongoConstants.SyncToken) != null
+          && obj.get(MongoConstants.ClientName) != null) {
+        tokenStatus = ((Integer) obj.get(MongoConstants.SyncToken)).intValue();
+        clientName = (String) obj.get(MongoConstants.ClientName);
         operand.setClientName(clientName);
-        if(tokenStatus > 0){
+        if (tokenStatus > 0) {
           operand.setTokenTaken(true);
-        }else{
+        } else {
           operand.setTokenTaken(false);
-        }   
+        }
       }
-    }   
+    }
     return operand;
   }
 
 
 
-  public String getSyncFieldValue(int syncFieldId, long syncTokenNo) {
+  public String getSyncFieldValue(int syncFieldId) {
     DBCollection col = db.getCollection(valueCollectionName);
 
-    DBObject query = new BasicDBObject(MongoConstants.SyncId, syncFieldId)
-        .append(MongoConstants.SyncToken, syncTokenNo);
+    DBObject query = new BasicDBObject(MongoConstants.SyncId, syncFieldId);
     String ret = "";
     DBCursor cursor = col.find(query);
     while (cursor.hasNext()) {
@@ -126,4 +126,34 @@ public class MongoUtil {
     return ret;
   }
 
+  public List<TokenOperand> queryTokenMode(int tokenEditing) {
+    DBCollection col = db.getCollection(toKenCollectionName);
+
+    DBObject query = new BasicDBObject(MongoConstants.SyncToken, tokenEditing);
+
+    int syncId = -1;
+    String clientName = "";
+    
+
+    DBCursor cursor = col.find(query);
+    List<TokenOperand> tokenModeList = new ArrayList<TokenOperand>();
+    while (cursor.hasNext()) {
+      TokenOperand operand = new TokenOperand();
+      DBObject obj = cursor.next();
+      if (obj != null && obj.get(MongoConstants.SyncId) != null
+          && obj.get(MongoConstants.ClientName) != null) {
+        syncId = ((Integer) obj.get(MongoConstants.SyncId)).intValue();
+        clientName = (String) obj.get(MongoConstants.ClientName);
+        operand.setSyncId(syncId);
+        operand.setClientName(clientName);
+        if(tokenEditing > 0){
+          operand.setTokenTaken(true);
+        }else{
+          operand.setTokenTaken(false);
+        }
+      }
+      tokenModeList.add(operand);
+    }
+    return tokenModeList;
+  }
 }
